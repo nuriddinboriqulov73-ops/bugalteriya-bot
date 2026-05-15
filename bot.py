@@ -21,9 +21,9 @@ import anthropic
 
 # ===================== SOZLAMALAR =====================
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "AIzaSyBUlHIHlTGJDcHCwLlXIEvOy3pOcdyP3Os")
 LEX_URL = "https://lex.uz/acts/-1357627"
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "")  # Optional: admin chat ID
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "6911800755")  # Optional: admin chat ID
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -240,12 +240,13 @@ async def show_main_menu(update_or_message, lang: str, user_id: int, edit=False)
     subscribed = user_id in subscribers
 
     if lang == "uz":
+        obuna_status = "✅ Obuna bor" if subscribed else "❌ Obuna yoq"
         text = (
             "🏠 *Bosh menyu*\n\n"
             "📚 *Imkoniyatlar:*\n"
             "• 🤖 AI buxgalter — har qanday savol bering\n"
-            "• 📋 Schyotlar rejasi — lex.uz dan ma'lumot\n"
-            f"• 📅 Kunlik darslar — {'✅ Obuna bor' if subscribed else '❌ Obuna yo\\'q'}\n\n"
+            "• 📋 Schyotlar rejasi — lex.uz dan malumot\n"
+            f"• 📅 Kunlik darslar — {obuna_status}\n\n"
             "Pastdagi tugmani bosing yoki savol yozing:"
         )
         keyboard = [
