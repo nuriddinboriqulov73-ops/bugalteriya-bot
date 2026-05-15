@@ -532,6 +532,8 @@ def run_web_server():
 
 # ===================== MAIN =====================
 
+# ===================== MAIN =====================
+
 async def main():
 
     threading.Thread(
@@ -575,29 +577,12 @@ async def main():
 
     logger.info("Bot ishga tushdi")
 
-    await app.initialize()
-
-    await app.start()
-
-    await app.updater.start_polling(
+    await app.run_polling(
         allowed_updates=Update.ALL_TYPES
     )
-
-    try:
-
-        await asyncio.Event().wait()
-
-    finally:
-
-        scheduler.shutdown()
-
-        await app.updater.stop()
-
-        await app.stop()
-
-        await app.shutdown()
 
 
 if __name__ == "__main__":
 
+    asyncio.run(main())
     asyncio.run(main())
