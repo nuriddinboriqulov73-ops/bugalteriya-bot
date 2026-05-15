@@ -13,7 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 BOT_TOKEN = "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U"
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY" ,"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")
+ANTHROPIC_API_KEY = "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"
 
 LEX_URL = "https://lex.uz/acts/-1357627"
 
