@@ -1,13 +1,16 @@
 services:
   - type: web
-    name: lex-bugalteriya-bot
+    name: bugalteriya-bot
     env: python
+    plan: free
+
     buildCommand: pip install -r requirements.txt
+
     startCommand: python bot.py
+
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: ANTHROPIC_API_KEY
+
+      - key: GEMINI_API_KEY
         sync: false
-      - key: PORT
-        value: 8080
