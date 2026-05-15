@@ -1,6 +1,4 @@
-# bot.py (to‘g‘rilangan)
 
-```python
 import logging
 import os
 import asyncio
