@@ -532,15 +532,15 @@ def run_web_server():
 
 # ===================== MAIN =====================
 
-# ===================== MAIN =====================
+def main():
 
-async def main():
-
+    # WEB SERVER
     threading.Thread(
         target=run_web_server,
         daemon=True
     ).start()
 
+    # BOT
     app = (
         Application
         .builder()
@@ -548,12 +548,19 @@ async def main():
         .build()
     )
 
+    # HANDLERS
+
     app.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start
+        )
     )
 
     app.add_handler(
-        CallbackQueryHandler(button_handler)
+        CallbackQueryHandler(
+            button_handler
+        )
     )
 
     app.add_handler(
@@ -563,26 +570,30 @@ async def main():
         )
     )
 
+    # SCHEDULER
+
     scheduler = AsyncIOScheduler()
 
     scheduler.add_job(
         send_daily_lesson,
         trigger="cron",
         hour=5,
-        minute=0,
-        args=[app]
+        minute=0
     )
 
     scheduler.start()
 
     logger.info("Bot ishga tushdi")
 
-    await app.run_polling(
+    # START BOT
+
+    app.run_polling(
         allowed_updates=Update.ALL_TYPES
     )
 
 
+# ===================== RUN =====================
+
 if __name__ == "__main__":
 
-    asyncio.run(main())
-    asyncio.run(main())
+    main()
