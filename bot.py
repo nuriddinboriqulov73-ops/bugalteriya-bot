@@ -8,7 +8,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from apscheduler.schedulers.background import BackgroundScheduler
-import anthropic
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "AIzaSyBUlHIHlTGJDcHCwLlXIEvOy3pOcdyP3Os")
