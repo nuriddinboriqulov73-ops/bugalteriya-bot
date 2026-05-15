@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
-BOT_TOKEN = "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U"
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
