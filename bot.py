@@ -3,9 +3,10 @@ import os
 import asyncio
 import threading
 import requests
-import google.generativeai as genai
+from openai import OpenAI
 
 from bs4 import BeautifulSoup
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from telegram import (
@@ -13,7 +14,6 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -23,8 +23,10 @@ from telegram.ext import (
     ContextTypes,
 )
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN" )
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 LEX_URL = "https://lex.uz/acts/-1357627"
 
@@ -38,9 +40,8 @@ logger = logging.getLogger(__name__)
 
 # ===================== GEMINI =====================
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-model = genai.GenerativeModel("gemini-pro")
 
 
 # ===================== USER DATA =====================
@@ -165,15 +166,24 @@ def ask_ai(question, lang, context_text=""):
         {lang}
         """
 
-        response = model.generate_content(prompt)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-        return response.text
+        return response.choices[0].message.content
 
     except Exception as e:
 
-        logger.error(f"Gemini xato: {e}")
+        logger.error(f"AI xato: {e}")
 
         return f"❌ Xato: {e}"
+    
 
 
 # ===================== DARS =====================
@@ -194,21 +204,23 @@ def generate_daily_lesson(lang, lesson_number):
             else f"Напиши урок про {topic}"
         )
 
-        response = model.generate_content(prompt)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-        return response.text, topic
+        return response.choices[0].message.content, topic
 
     except Exception as e:
 
         logger.error(f"Dars xato: {e}")
 
         return "", ""
-
-
-lesson_counter = {
-    "count": 1
-}
-
 
 # ===================== START =====================
 
@@ -531,7 +543,7 @@ def run_web_server():
 
 # ===================== MAIN =====================
 
-def main():
+async def main():
 
     # WEB SERVER
     threading.Thread(
@@ -569,30 +581,25 @@ def main():
         )
     )
 
-    # SCHEDULER
-
-    scheduler = AsyncIOScheduler()
-
-    scheduler.add_job(
-        send_daily_lesson,
-        trigger="cron",
-        hour=5,
-        minute=0
-    )
-
-    scheduler.start()
-
     logger.info("Bot ishga tushdi")
 
-    # START BOT
+    # BOT START
 
-    app.run_polling(
+    await app.initialize()
+
+    await app.start()
+
+    await app.updater.start_polling(
         allowed_updates=Update.ALL_TYPES
     )
+
+    # LOOP
+
+    await asyncio.Event().wait()
 
 
 # ===================== RUN =====================
 
 if __name__ == "__main__":
 
-    main()
+    asyncio.run(main())
