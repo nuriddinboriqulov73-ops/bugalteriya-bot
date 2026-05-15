@@ -1,159 +1,609 @@
-
 import logging
 import os
 import asyncio
 import threading
 import requests
+import google.generativeai as genai
+
 from bs4 import BeautifulSoup
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U" )
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY","AIzaSyBUlHIHlTGJDcHCwLlXIEvOy3pOcdyP3Os")
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
+)
+
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+    ContextTypes,
+)
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+
+# ===================== SOZLAMALAR =====================
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U")
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY" , "AIzaSyBUlHIHlTGJDcHCwLlXIEvOy3pOcdyP3Os")
+
 LEX_URL = "https://lex.uz/acts/-1357627"
 
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
 logger = logging.getLogger(__name__)
 
+
+# ===================== GEMINI =====================
+
+genai.configure(api_key=GEMINI_API_KEY)
+
+model = genai.GenerativeModel("gemini-pro")
+
+
+# ===================== USER DATA =====================
+
 user_settings = {}
+
 subscribers = set()
 
-def get_lang(uid):
-    return user_settings.get(uid, {}).get("lang", "uz")
 
-def set_lang(uid, lang):
-    if uid not in user_settings:
-        user_settings[uid] = {}
-    user_settings[uid]["lang"] = lang
+def get_lang(user_id):
 
-_cache = {"data": None, "loaded": False}
+    return user_settings.get(user_id, {}).get("lang", "uz")
+
+
+def set_lang(user_id, lang):
+
+    if user_id not in user_settings:
+        user_settings[user_id] = {}
+
+    user_settings[user_id]["lang"] = lang
+
+
+# ===================== SCHYOTLAR =====================
+
+_cache = {
+    "data": None,
+    "loaded": False
+}
+
+
+def fetch_schyotlar():
+
+    try:
+
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        resp = requests.get(
+            LEX_URL,
+            headers=headers,
+            timeout=15
+        )
+
+        resp.encoding = "utf-8"
+
+        soup = BeautifulSoup(
+            resp.text,
+            "html.parser"
+        )
+
+        schyotlar = []
+
+        table = soup.find("table")
+
+        if not table:
+            return []
+
+        for row in table.find_all("tr"):
+
+            cols = row.find_all("td")
+
+            if len(cols) >= 2:
+
+                raqam = cols[0].get_text(strip=True)
+
+                nom = cols[1].get_text(strip=True)
+
+                tur = (
+                    cols[2].get_text(strip=True)
+                    if len(cols) > 2 else ""
+                )
+
+                if (
+                    raqam and
+                    nom and
+                    any(c.isdigit() for c in raqam)
+                ):
+
+                    schyotlar.append({
+                        "raqam": raqam,
+                        "nom": nom,
+                        "tur": tur
+                    })
+
+        return schyotlar
+
+    except Exception as e:
+
+        logger.error(f"Fetch xato: {e}")
+
+        return []
+
 
 def get_schyotlar():
+
     if not _cache["loaded"]:
-        try:
-            r = requests.get(LEX_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-            r.encoding = "utf-8"
-            soup = BeautifulSoup(r.text, "html.parser")
-            data = []
-            table = soup.find("table")
 
-            if table:
-                for row in table.find_all("tr"):
-                    cols = row.find_all("td")
-                    if len(cols) >= 2:
-                        rq = cols[0].get_text(strip=True)
-                        nm = cols[1].get_text(strip=True)
-                        tr = cols[2].get_text(strip=True) if len(cols) > 2 else ""
-
-                        if rq and nm and any(c.isdigit() for c in rq):
-                            data.append({"raqam": rq, "nom": nm, "tur": tr})
-
-            _cache["data"] = data
-
-        except Exception as e:
-            logger.error(f"Fetch error: {e}")
-            _cache["data"] = []
+        _cache["data"] = fetch_schyotlar()
 
         _cache["loaded"] = True
 
     return _cache["data"]
 
+
+# ===================== GEMINI AI =====================
+
+def ask_ai(question, lang, context_text=""):
+
+    try:
+
+        prompt = f"""
+        Sen professional buxgaltersan.
+
+        Kontekst:
+        {context_text}
+
+        Savol:
+        {question}
+
+        Til:
+        {lang}
+        """
+
+        response = model.generate_content(prompt)
+
+        return response.text
+
+    except Exception as e:
+
+        logger.error(f"Gemini xato: {e}")
+
+        return f"❌ Xato: {e}"
+
+
+# ===================== DARS =====================
+
+def generate_daily_lesson(lang, lesson_number):
+
+    try:
+
+        topic = (
+            f"Buxgalteriya darsi #{lesson_number}"
+            if lang == "uz"
+            else f"Урок бухгалтерии #{lesson_number}"
+        )
+
+        prompt = (
+            f"{topic} haqida professional dars yoz"
+            if lang == "uz"
+            else f"Напиши урок про {topic}"
+        )
+
+        response = model.generate_content(prompt)
+
+        return response.text, topic
+
+    except Exception as e:
+
+        logger.error(f"Dars xato: {e}")
+
+        return "", ""
+
+
+lesson_counter = {
+    "count": 1
+}
+
+
+# ===================== START =====================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [[
-        InlineKeyboardButton("Ozbekcha", callback_data="lang_uz"),
-        InlineKeyboardButton("Russkiy", callback_data="lang_ru")
+
+    keyboard = [[
+        InlineKeyboardButton(
+            "🇺🇿 O'zbekcha",
+            callback_data="lang_uz"
+        ),
+
+        InlineKeyboardButton(
+            "🇷🇺 Русский",
+            callback_data="lang_ru"
+        )
     ]]
 
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
-        "Xush kelibsiz! / Добро пожаловать!\n\nTilni tanlang:",
-        reply_markup=InlineKeyboardMarkup(kb)
+        "👋 Xush kelibsiz!\n\nTilni tanlang:",
+        reply_markup=reply_markup
     )
 
-async def menu(msg, lang, uid, edit=False):
-    if lang == "uz":
-        txt = "Bosh menyu\n\nSavol yozing yoki tugma bosing"
-        kb = [[InlineKeyboardButton("Schyotlar", callback_data="sch_menu")]]
-    else:
-        txt = "Главное меню\n\nНапишите вопрос"
-        kb = [[InlineKeyboardButton("План счетов", callback_data="sch_menu")]]
 
-    rm = InlineKeyboardMarkup(kb)
+# ===================== MENU =====================
+
+async def show_main_menu(
+        msg,
+        lang,
+        user_id,
+        edit=False
+):
+
+    subscribed = user_id in subscribers
+
+    if lang == "uz":
+
+        text = (
+            "🏠 Bosh menyu\n\n"
+            "🤖 AI Buxgalter\n"
+            "📋 Schyotlar rejasi\n"
+            f"📅 Darslar: {'✅ Obuna bor' if subscribed else '❌ Obuna yoq'}"
+        )
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "🤖 AI Savol",
+                    callback_data="ai"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "📋 Schyotlar",
+                    callback_data="sch"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "🔔 Obuna"
+                    if not subscribed
+                    else "🔕 Chiqish",
+
+                    callback_data="sub"
+                    if not subscribed
+                    else "unsub"
+                )
+            ]
+        ]
+
+    else:
+
+        text = (
+            "🏠 Главное меню\n\n"
+            "🤖 AI Бухгалтер\n"
+            "📋 План счетов"
+        )
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "🤖 AI",
+                    callback_data="ai"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "📋 Счета",
+                    callback_data="sch"
+                )
+            ]
+        ]
+
+    rm = InlineKeyboardMarkup(keyboard)
 
     if edit:
-        await msg.edit_text(txt, reply_markup=rm)
+
+        await msg.edit_text(
+            text,
+            reply_markup=rm
+        )
+
     else:
-        await msg.reply_text(txt, reply_markup=rm)
 
-async def btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
+        await msg.reply_text(
+            text,
+            reply_markup=rm
+        )
 
-    d = q.data
-    uid = q.from_user.id
 
-    if d in ("lang_uz", "lang_ru"):
-        lang = "uz" if d == "lang_uz" else "ru"
-        set_lang(uid, lang)
-        await menu(q.message, lang, uid, edit=True)
+# ===================== BUTTONS =====================
 
-    elif d == "sch_menu":
+async def button_handler(
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    data = query.data
+
+    user_id = query.from_user.id
+
+    lang = get_lang(user_id)
+
+    if data in ("lang_uz", "lang_ru"):
+
+        new_lang = (
+            "uz"
+            if data == "lang_uz"
+            else "ru"
+        )
+
+        set_lang(user_id, new_lang)
+
+        await show_main_menu(
+            query.message,
+            new_lang,
+            user_id,
+            edit=True
+        )
+
+    elif data == "sub":
+
+        subscribers.add(user_id)
+
+        await query.message.reply_text(
+            "✅ Obuna boldingiz"
+        )
+
+    elif data == "unsub":
+
+        subscribers.discard(user_id)
+
+        await query.message.reply_text(
+            "❌ Obuna bekor qilindi"
+        )
+
+    elif data == "ai":
+
+        await query.message.reply_text(
+            "✍️ Savolingizni yozing"
+        )
+
+    elif data == "sch":
+
         sch = get_schyotlar()
 
         if not sch:
-            await q.message.reply_text("Ma'lumot topilmadi")
+
+            await query.message.reply_text(
+                "❌ Malumot topilmadi"
+            )
+
             return
 
-        txt = "\n".join([
+        text = "\n".join([
             f"{s['raqam']} - {s['nom']}"
-            for s in sch[:50]
+            for s in sch[:100]
         ])
 
-        for ch in [txt[i:i+4000] for i in range(0, len(txt), 4000)]:
-            await q.message.reply_text(ch)
+        chunks = [
+            text[i:i + 4000]
+            for i in range(0, len(text), 4000)
+        ]
 
-async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    await update.message.reply_text(f"Siz yozdingiz:\n\n{txt}")
+        for ch in chunks:
 
-class H(BaseHTTPRequestHandler):
+            await query.message.reply_text(ch)
+
+
+# ===================== AI MESSAGE =====================
+
+async def handle_ai_question(
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE
+):
+
+    user_id = update.effective_user.id
+
+    lang = get_lang(user_id)
+
+    question = update.message.text
+
+    wait = await update.message.reply_text(
+        "🤔 AI oylayapti..."
+    )
+
+    sch = get_schyotlar()
+
+    context_text = "; ".join([
+        f"{s['raqam']} {s['nom']}"
+        for s in sch[:10]
+    ])
+
+    answer = ask_ai(
+        question,
+        lang,
+        context_text
+    )
+
+    await wait.delete()
+
+    await update.message.reply_text(answer)
+
+
+# ===================== DAILY LESSON =====================
+
+async def send_daily_lesson(app):
+
+    if not subscribers:
+        return
+
+    lesson_num = lesson_counter["count"]
+
+    lesson_uz, topic_uz = generate_daily_lesson(
+        "uz",
+        lesson_num
+    )
+
+    lesson_ru, topic_ru = generate_daily_lesson(
+        "ru",
+        lesson_num
+    )
+
+    lesson_counter["count"] += 1
+
+    for user_id in list(subscribers):
+
+        try:
+
+            lang = get_lang(user_id)
+
+            lesson = (
+                lesson_uz
+                if lang == "uz"
+                else lesson_ru
+            )
+
+            topic = (
+                topic_uz
+                if lang == "uz"
+                else topic_ru
+            )
+
+            text = f"""
+📚 {topic}
+
+{lesson}
+"""
+
+            chunks = [
+                text[i:i + 4000]
+                for i in range(0, len(text), 4000)
+            ]
+
+            for ch in chunks:
+
+                await app.bot.send_message(
+                    chat_id=user_id,
+                    text=ch
+                )
+
+        except Exception as e:
+
+            logger.error(f"Dars xato: {e}")
+
+
+# ===================== WEB SERVER =====================
+
+class HealthHandler(BaseHTTPRequestHandler):
+
     def do_GET(self):
+
         self.send_response(200)
+
         self.end_headers()
+
         self.wfile.write(b"OK")
 
-    def log_message(self, *a):
+    def log_message(self, *args):
+
         pass
 
 
-def web():
-    HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), H).serve_forever()
+def run_web_server():
+
+    port = int(os.environ.get("PORT", 8080))
+
+    HTTPServer(
+        ("0.0.0.0", port),
+        HealthHandler
+    ).serve_forever()
 
 
-def main():
-    threading.Thread(target=web, daemon=True).start()
+# ===================== MAIN =====================
 
-    app = Application.builder().token(BOT_TOKEN).build()
+async def main():
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(btn))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_handler))
+    threading.Thread(
+        target=run_web_server,
+        daemon=True
+    ).start()
 
-    logger.info("Bot ishga tushdi!")
+    app = (
+        Application
+        .builder()
+        .token(BOT_TOKEN)
+        .build()
+    )
 
-    app.run_polling()
+    app.add_handler(
+        CommandHandler("start", start)
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(button_handler)
+    )
+
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            handle_ai_question
+        )
+    )
+
+    scheduler = AsyncIOScheduler()
+
+    scheduler.add_job(
+        send_daily_lesson,
+        trigger="cron",
+        hour=5,
+        minute=0,
+        args=[app]
+    )
+
+    scheduler.start()
+
+    logger.info("Bot ishga tushdi")
+
+    await app.initialize()
+
+    await app.start()
+
+    await app.updater.start_polling(
+        allowed_updates=Update.ALL_TYPES
+    )
+
+    try:
+
+        await asyncio.Event().wait()
+
+    finally:
+
+        scheduler.shutdown()
+
+        await app.updater.stop()
+
+        await app.stop()
+
+        await app.shutdown()
 
 
 if __name__ == "__main__":
-    main()
-```
 
-# requirements.txt
-
-```txt
-python-telegram-bot==20.7
-google-generativeai==0.3.2
-requests==2.31.0
-beautifulsoup4==4.12.3
-lxml==5.1.0
-```
+    asyncio.run(main())
