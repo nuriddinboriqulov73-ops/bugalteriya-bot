@@ -23,14 +23,8 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-
-# ===================== SOZLAMALAR =====================
-
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8850667627:AAEYJOyVyJzGGKuYbQNlpYnHLBK9GdtPh_U")
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY" , "AIzaSyBUlHIHlTGJDcHCwLlXIEvOy3pOcdyP3Os")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 LEX_URL = "https://lex.uz/acts/-1357627"
 
