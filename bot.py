@@ -383,9 +383,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("Ruscha", callback_data="lang_ru")
     ]]
     await update.message.reply_text(
-        "Assalomu alaykum! Xush kelibsiz!\n\n"
-        "Salom! Dobro pozhalovat!\n\n"
-        "Tilni tanlang / Vyberi yazyk:",
+        "🌟 Assalomu alaykum! Xush kelibsiz!\n"
+        "👋 Salom! Dobro pozhalovat!\n\n"
+        "🌐 Tilni tanlang / Vyberi yazyk:",
         reply_markup=InlineKeyboardMarkup(kb)
     )
 
@@ -394,37 +394,37 @@ async def show_menu(msg, lang, uid, edit=False):
     n = state["lesson_n"]
     if lang == "uz":
         txt = (
-            "Bosh menyu\n\n"
-            "Kunlik jadval:\n"
-            "04:00 - Yangi dars\n"
-            "12:30 - Test\n"
-            "18:30 - Takrorlash\n\n"
-            f"Joriy dars: #{n}-mavzu\n"
-            f"Obuna holati: {'Faol' if sub else 'Yoq'}\n\n"
-            "Nima qilmoqchisiz?"
+            "🏠 Bosh menyu\n\n"
+            "📅 Kunlik jadval:\n"
+            "🌅 04:00 — Yangi dars\n"
+            "📝 12:30 — Test\n"
+            "🔄 18:30 — Takrorlash\n\n"
+            f"📖 Joriy dars: #{n}-mavzu\n"
+            f"🔔 Obuna: {'✅ Faol' if sub else '❌ Yoq'}\n\n"
+            "👇 Nima qilmoqchisiz?"
         )
         kb = [
-            [InlineKeyboardButton("AI Buxgalterga savol", callback_data="ai_hint")],
-            [InlineKeyboardButton("Schyotlar rejasi (lex.uz)", callback_data="sch_menu")],
-            [InlineKeyboardButton("Obunadan chiqish" if sub else "Darslarga obuna bolish", callback_data="unsub" if sub else "sub")],
-            [InlineKeyboardButton("Tilni ozgartirish", callback_data="chg_lang")],
+            [InlineKeyboardButton("🤖 AI Buxgalterga savol", callback_data="ai_hint")],
+            [InlineKeyboardButton("📋 Schyotlar rejasi (lex.uz)", callback_data="sch_menu")],
+            [InlineKeyboardButton("🔕 Obunadan chiqish" if sub else "🔔 Darslarga obuna bolish", callback_data="unsub" if sub else "sub")],
+            [InlineKeyboardButton("🌐 Tilni ozgartirish", callback_data="chg_lang")],
         ]
     else:
         txt = (
-            "Glavnoe menyu\n\n"
-            "Raspisanie:\n"
-            "04:00 - Urok\n"
-            "12:30 - Test\n"
-            "18:30 - Povtorenie\n\n"
-            f"Tekushchiy urok: #{n}\n"
-            f"Podpiska: {'Aktivna' if sub else 'Net'}\n\n"
-            "Chto khotite sdelat?"
+            "🏠 Glavnoe menyu\n\n"
+            "📅 Raspisanie:\n"
+            "🌅 04:00 — Urok\n"
+            "📝 12:30 — Test\n"
+            "🔄 18:30 — Povtorenie\n\n"
+            f"📖 Tekushchiy urok: #{n}\n"
+            f"🔔 Podpiska: {'✅ Aktivna' if sub else '❌ Net'}\n\n"
+            "👇 Chto khotite sdelat?"
         )
         kb = [
-            [InlineKeyboardButton("Vopros AI bukhgalteru", callback_data="ai_hint")],
-            [InlineKeyboardButton("Plan schetov (lex.uz)", callback_data="sch_menu")],
-            [InlineKeyboardButton("Otpisatsya" if sub else "Podpisatsya na uroki", callback_data="unsub" if sub else "sub")],
-            [InlineKeyboardButton("Smenit yazyk", callback_data="chg_lang")],
+            [InlineKeyboardButton("🤖 Vopros AI bukhgalteru", callback_data="ai_hint")],
+            [InlineKeyboardButton("📋 Plan schetov (lex.uz)", callback_data="sch_menu")],
+            [InlineKeyboardButton("🔕 Otpisatsya" if sub else "🔔 Podpisatsya na uroki", callback_data="unsub" if sub else "sub")],
+            [InlineKeyboardButton("🌐 Smenit yazyk", callback_data="chg_lang")],
         ]
     rm = InlineKeyboardMarkup(kb)
     try:
@@ -440,11 +440,11 @@ async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def reload_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     lang = get_lang(uid)
-    m = await update.message.reply_text("Yangilanmoqda..." if lang == "uz" else "Obnovleniye...")
+    m = await update.message.reply_text("🔄 Yangilanmoqda..." if lang == "uz" else "🔄 Obnovleniye...")
     s = reload_cache()
     await m.edit_text(
-        f"Yangilandi! {len(s)} ta schyot yuklandi." if lang == "uz"
-        else f"Obnovleno! Zagruzheno {len(s)} schetov."
+        f"✅ Yangilandi! {len(s)} ta schyot yuklandi." if lang == "uz"
+        else f"✅ Obnovleno! Zagruzheno {len(s)} schetov."
     )
 
 async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -457,12 +457,12 @@ async def ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if any(w.lower() in q.lower() for w in s['nom'].split())
     ][:5])
     wm = await update.message.reply_text(
-        "Tahlil qilinmoqda, biroz kuting..." if lang == "uz"
-        else "Analiziruyetsya, podozhdite..."
+        "🤔 Tahlil qilinmoqda, biroz kuting..." if lang == "uz"
+        else "🤔 Analiziruyetsya, podozhdite..."
     )
     ans = ask_ai(q, lang, ctx)
     await wm.delete()
-    await update.message.reply_text("AI Buxgalter:\n\n" + ans)
+    await update.message.reply_text("🤖 AI Buxgalter:\n\n" + ans)
 
 async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -477,23 +477,23 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subscribers.add(uid)
         if nl == "uz":
             await q.message.reply_text(
-                "Til tanlandi!\n\n"
-                "Siz avtomatik ravishda darslarga obuna boldingiz!\n\n"
-                "Jadval:\n"
-                "04:00 - Yangi dars\n"
-                "12:30 - Test\n"
-                "18:30 - Takrorlash\n\n"
-                "Istalgan buxgalteriya savolini yozing!"
+                "✅ Til tanlandi!\n\n"
+                "🎉 Siz avtomatik ravishda darslarga obuna boldingiz!\n\n"
+                "📅 Jadval:\n"
+                "🌅 04:00 — Yangi dars\n"
+                "📝 12:30 — Test\n"
+                "🔄 18:30 — Takrorlash\n\n"
+                "💬 Istalgan buxgalteriya savolini yozing!"
             )
         else:
             await q.message.reply_text(
-                "Yazyk vybran!\n\n"
-                "Vy avtomaticheski podpisany na uroki!\n\n"
-                "Raspisanie:\n"
-                "04:00 - Urok\n"
-                "12:30 - Test\n"
-                "18:30 - Povtorenie\n\n"
-                "Pishite lyuboy bukhgaltersky vopros!"
+                "✅ Yazyk vybran!\n\n"
+                "🎉 Vy avtomaticheski podpisany na uroki!\n\n"
+                "📅 Raspisanie:\n"
+                "🌅 04:00 — Urok\n"
+                "📝 12:30 — Test\n"
+                "🔄 18:30 — Povtorenie\n\n"
+                "💬 Pishite lyuboy bukhgaltersky vopros!"
             )
         await show_menu(q.message, nl, uid)
 
@@ -502,35 +502,35 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("O'zbekcha", callback_data="lang_uz"),
             InlineKeyboardButton("Ruscha", callback_data="lang_ru")
         ]]
-        await q.edit_message_text("Tilni tanlang / Vyberi yazyk:", reply_markup=InlineKeyboardMarkup(kb))
+        await q.edit_message_text("🌐 Tilni tanlang / Vyberi yazyk:", reply_markup=InlineKeyboardMarkup(kb))
 
     elif d == "sub":
         subscribers.add(uid)
         if lang == "uz":
             await q.message.reply_text(
-                "Muvaffaqiyatli obuna boldingiz!\n\n"
-                "Jadval:\n"
-                "Ertalab 04:00 - Yangi dars\n"
-                "Tushlik 12:30 - Test\n"
-                "Kechqurun 18:30 - Takrorlash\n\n"
-                "Har kuni buxgalteriya bilimlaringiz oshib boradi!"
+                "🎉 Muvaffaqiyatli obuna boldingiz!\n\n"
+                "📅 Jadval:\n"
+                "🌅 Ertalab 04:00 — Yangi dars\n"
+                "📝 Tushlik 12:30 — Test\n"
+                "🔄 Kechqurun 18:30 — Takrorlash\n\n"
+                "📈 Har kuni buxgalteriya bilimlaringiz oshib boradi!"
             )
         else:
             await q.message.reply_text(
-                "Vy uspeshno podpisalis!\n\n"
-                "Raspisanie:\n"
-                "Utro 04:00 - Urok\n"
-                "Obed 12:30 - Test\n"
-                "Vecher 18:30 - Povtorenie\n\n"
-                "Kazhdyy den vashi znaniyu budu rasti!"
+                "🎉 Vy uspeshno podpisalis!\n\n"
+                "📅 Raspisanie:\n"
+                "🌅 Utro 04:00 — Urok\n"
+                "📝 Obed 12:30 — Test\n"
+                "🔄 Vecher 18:30 — Povtorenie\n\n"
+                "📈 Kazhdyy den vashi znaniyu budu rasti!"
             )
         await show_menu(q.message, lang, uid)
 
     elif d == "unsub":
         subscribers.discard(uid)
         await q.message.reply_text(
-            "Obuna bekor qilindi. Qaytib kelishingizni kutamiz!" if lang == "uz"
-            else "Podpiska otmenena. Zhdem vas obratno!"
+            "😔 Obuna bekor qilindi. Qaytib kelishingizni kutamiz!" if lang == "uz"
+            else "😔 Podpiska otmenena. Zhdem vas obratno!"
         )
         await show_menu(q.message, lang, uid)
 
@@ -573,13 +573,13 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             k = (r[0] + "000") if r and r[0].isdigit() else "X"
             guruhlar.setdefault(k, []).append(s)
         kb = [
-            [InlineKeyboardButton(f"Seriya {g} ({len(v)} ta schyot)", callback_data=f"g_{g}")]
+            [InlineKeyboardButton(f"📁 {g} seriya — {len(v)} ta schyot", callback_data=f"g_{g}")]
             for g, v in sorted(guruhlar.items())
         ]
-        kb.append([InlineKeyboardButton("Orqaga" if lang == "uz" else "Nazad", callback_data="back")])
+        kb.append([InlineKeyboardButton("⬅️ Orqaga" if lang == "uz" else "⬅️ Nazad", callback_data="back")])
         title = (
-            f"Schyotlar rejasi (lex.uz)\nJami: {len(sch)} ta schyot\n\nSerirani tanlang:" if lang == "uz"
-            else f"Plan schetov (lex.uz)\nVsego: {len(sch)} schetov\n\nVyberi seriyu:"
+            f"📋 Schyotlar rejasi\n📊 Jami: {len(sch)} ta schyot\n\n👇 Serirani tanlang:" if lang == "uz"
+            else f"📋 Plan schetov\n📊 Vsego: {len(sch)} schetov\n\n👇 Vyberi seriyu:"
         )
         await q.edit_message_text(title, reply_markup=InlineKeyboardMarkup(kb))
 
@@ -624,8 +624,8 @@ async def _send_lesson(app):
             topic = tu if lang == "uz" else tr
             if not lesson: continue
             hdr = (
-                f"Ertalabki Dars #{n}\nMavzu: {topic}\n\n" if lang == "uz"
-                else f"Utrennyy Urok #{n}\nTema: {topic}\n\n"
+                f"🌅 Ertalabki Dars #{n}\n📖 Mavzu: {topic}\n\n" if lang == "uz"
+                else f"🌅 Urok #{n}\n📖 Tema: {topic}\n\n"
             )
             txt = hdr + lesson
             for ch in [txt[i:i+4000] for i in range(0, len(txt), 4000)]:
@@ -650,8 +650,8 @@ async def _send_test(app):
             test = gen_test(lang, topic)
             if not test: continue
             hdr = (
-                f"Tushlik Testi\nMavzu: {topic}\n\n" if lang == "uz"
-                else f"Obedennoe Testirovanie\nTema: {topic}\n\n"
+                f"📝 Tushlik Testi\n📖 Mavzu: {topic}\n\n" if lang == "uz"
+                else f"📝 Obedennoe Testirovanie\n📖 Tema: {topic}\n\n"
             )
             txt = hdr + test
             for ch in [txt[i:i+4000] for i in range(0, len(txt), 4000)]:
@@ -676,8 +676,8 @@ async def _send_review(app):
             review = gen_review(lang, topic)
             if not review: continue
             hdr = (
-                f"Kechki Takrorlash\nMavzu: {topic}\n\n" if lang == "uz"
-                else f"Vechernee Povtorenie\nTema: {topic}\n\n"
+                f"🔄 Kechki Takrorlash\n📖 Mavzu: {topic}\n\n" if lang == "uz"
+                else f"🔄 Vechernee Povtorenie\n📖 Tema: {topic}\n\n"
             )
             txt = hdr + review
             for ch in [txt[i:i+4000] for i in range(0, len(txt), 4000)]:
