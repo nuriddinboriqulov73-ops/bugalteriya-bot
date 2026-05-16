@@ -101,7 +101,7 @@ def ask_ai(question, lang, ctx=""):
                     }
                 ]
             },
-            timeout=30
+            timeout=120
         )
 
         data = resp.json()
