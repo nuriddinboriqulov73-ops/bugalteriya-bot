@@ -379,15 +379,20 @@ def gen_review(lang, topic):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = [[
-        InlineKeyboardButton("O'zbekcha", callback_data="lang_uz"),
-        InlineKeyboardButton("Ruscha", callback_data="lang_ru")
+        InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="lang_uz"),
+        InlineKeyboardButton("🇷🇺 Ruscha", callback_data="lang_ru")
     ]]
-    await update.message.reply_text(
+    text = (
         "🌟 Assalomu alaykum! Xush kelibsiz!\n"
         "👋 Salom! Dobro pozhalovat!\n\n"
-        "🌐 Tilni tanlang / Vyberi yazyk:",
-        reply_markup=InlineKeyboardMarkup(kb)
+        "📚 Bu bot siz uchun:\n"
+        "🌅 04:00 — Yangi buxgalteriya darsi\n"
+        "📝 12:30 — Bilimni tekshirish testi\n"
+        "🔄 18:30 — Kechki takrorlash\n"
+        "🤖 — AI buxgalter (24/7 savollarga javob)\n\n"
+        "🌐 Tilni tanlang / Vyberi yazyk:"
     )
+    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
 
 async def show_menu(msg, lang, uid, edit=False):
     sub = uid in subscribers
@@ -499,8 +504,8 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif d == "chg_lang":
         kb = [[
-            InlineKeyboardButton("O'zbekcha", callback_data="lang_uz"),
-            InlineKeyboardButton("Ruscha", callback_data="lang_ru")
+            InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="lang_uz"),
+            InlineKeyboardButton("🇷🇺 Ruscha", callback_data="lang_ru")
         ]]
         await q.edit_message_text("🌐 Tilni tanlang / Vyberi yazyk:", reply_markup=InlineKeyboardMarkup(kb))
 
