@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8898820544:AAGPrFuYXAut6WGenTNM42MCtVRcCrlLytY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -703,7 +703,7 @@ def web():
     HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), H).serve_forever()
 
 # === MAIN ===
-def main():
+async def main():
     threading.Thread(target=web, daemon=True).start()
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -712,18 +712,23 @@ def main():
     app.add_handler(CallbackQueryHandler(btn_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_handler))
 
-    sc = BackgroundScheduler()
+    # AsyncIOScheduler - event loop bilan birga ishlaydi
+    sc = AsyncIOScheduler()
     # Toshkent UTC+5: 04:00=23:00UTC, 12:30=07:30UTC, 18:30=13:30UTC
-    sc.add_job(send_lesson_sync, "cron", hour=23, minute=0,  args=[app])
-    sc.add_job(send_test_sync,   "cron", hour=7,  minute=30, args=[app])
-    sc.add_job(send_review_sync, "cron", hour=13, minute=30, args=[app])
+    sc.add_job(_send_lesson, "cron", hour=23, minute=0,  args=[app])
+    sc.add_job(_send_test,   "cron", hour=7,  minute=30, args=[app])
+    sc.add_job(_send_review, "cron", hour=13, minute=30, args=[app])
     sc.start()
 
     logger.info("Jadval: 04:00 dars | 12:30 test | 18:30 takrorlash (Toshkent)")
     logger.info("Schyotlar yuklanmoqda...")
     get_schyotlar()
     logger.info("Bot ishga tushdi!")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
